@@ -1,0 +1,11 @@
+version: "3"
+services:
+  web:
+    container_name: servernew
+    restart: always
+    build: .
+    ports:
+      -   "4020:4020"
+    volumes:
+      - .:\Users\LORENAR\Pictures\lab3\src
+  
