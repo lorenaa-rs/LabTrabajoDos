@@ -1,112 +1,83 @@
+
 const express = require('express')
 const app = express()
-//const port = process.argv[2];
-const port = 3000;
-const cors = require('cors');
-const shellExec = require('shell-exec');
-const shell = require('shelljs');
-const nodemailer = require('nodemailer');
+
+const port = process.argv[2];
+//const port = 3001;
 const bodyparser = require('body-parser')
-const loadbalance = require('loadbalance')
-var path = require('path')
-var fs = require('fs')
-var morgan = require('morgan')
-var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'})
-const axios = require('axios');
-var servers = ["http://localhost:3001/",
-    "http://localhost:3002/",
-    "http://localhost:3003/"]
-var maxErrors = 3;    
-var portNew = 3004;
-var engine = loadbalance.roundRobin(servers)
-var dockerip = 1;
-var count = 0;
+const multer = require('multer')
+const cors = require('cors');
+var sizeOf = require('image-size');
+
+var Jimp = require("jimp");
+const { default: axios } = require('axios');
+var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/')
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.originalname)
+    }
+})
+var upload = multer({ storage: storage })
+
 app.use(express.json())
 app.use(bodyparser.json())
 app.use(bodyparser.urlencoded({ extended: true }))
 app.use(cors())
-app.use(morgan('combined', {stream: accessLogStream}))
-app.use(require('express-status-monitor')());
+app.use(express.static('public'));
 
 app.get('/', (req, res) => {
-    loadBalancer(res);
+    console.log("Connection");
+    res.send('http://localhost:' + port + '/')
 })
 
-app.post('/addServer', (req, res) => {    
-    shell.exec(`sh bash.sh `)
-    
-    axios.get("https://172.17.0."+dockerip+"/"+portNew)
-        .then(function (response) {            
-            console.log("Servidor agregado: ")
-            console.log('>'+response.data+'<')
-            servers.push("https://172.17.0."+dockerIp+"/"+portNew)
-            engine = loadbalance.roundRobin(servers)
-            maxErrors = maxErrors + 1
-            res.send("Servidor correctamente agregado")
-            console.log("Servers: " + servers)
-            portNew++;
-            dockerIp++;
-        })
-        .catch(function (error) {            
-            var txt = "Servidor: " + srv + " no disponible";
-            res.send(txt)
-            console.log(txt)
-        })
-    
-})
-
-function loadBalancer(res) {
-    if (count < maxErrors) {
-        var srv = engine.pick();
-        console.log(srv + " ha recibido peticion");
-        axios.get(srv)
-            .then(function (response) {
-                //console.log("count: " + count)
-                count = 0;
-                res.send(response.data)
-            })
-            .catch(function (error) {
-                var txt = "Servidor: " + srv + " no disponible";
-                console.log(txt)
-                count = count + 1;
-                //console.log("count: " + count)
-                mail(txt);
-                loadBalancer(res);
-            })
-
-    } else {
-        res.send('Error')
-        console.log("Servidores fuera de servicio")
-        count = 0;
+app.post('/loadImg', upload.single('files'), (req, res, next) => {
+    console.log("Connection")
+    const file = req.file
+    if (!file) {
+        const error = new Error('Please upload a file')
+        error.httpStatusCode = 400
+        return next(error)
     }
+    console.log(file.filename)
+    axios.get('https://geek-jokes.sameerkumar.website/api?format=json').then(function(response){
+        editImg('public/' + file.filename, response.data.joke);
+        res.send(file.filename)
+    })
+   
+})
 
-}
+app.post('/getImage', (req, res) => {
+    console.log(req.body);
+    var divFile = "<div>"
+        + "<img src='http://localhost:" + port + '/' + req.body.fileName + "'" + "/>"
+        + "</div>"
+    //res.sendFile(__dirname + '/public/' + req.body.fileName)
+    res.end(divFile);
+})
 
-function mail(data) {
-    
-    var trasnporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-            user: 'pruebadistribuidos12',
-            pass: 'Distribuidos2021'
+function editImg(filePath, text) {
+    var wi = ""
+    var he = ""
+    sizeOf(filePath, function (err, dimensions) {
+        if (!err) {
+            wi = dimensions.width;
+            he = dimensions.height;
         }
     });
-    var infoMessage = {
-        from: 'pruebadistribuidos12@gmail.com',
-        to: 'lorena.rioss@uptc.edu.co',
-        subject: 'Falla en el sistema',
-        text: data
-    };
-    trasnporter.sendMail(infoMessage, function (error, info) {
-        if (error) {
-            console.log("error enviando correo");
-            console.log(error);
-        } else {
-            console.log("Correo enviado");
-        }
-    });
+    Jimp.read(filePath)
+        .then(function (image) {
+            loadedImage = image;
+            return Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+        })
+        .then(function (font) {
+            loadedImage.print(font, (wi / 3), (he - 30), text)
+                .write(filePath);
+        })
+        .catch(function (err) {
+            console.error(err);
+        });
 }
 
 app.listen(port, () => {
