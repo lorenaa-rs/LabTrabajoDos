@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js'></script>
+    <style>
+        .loader {
+            border: 16px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 16px solid #3498db;
+            width: 120px;
+            height: 120px;
+            -webkit-animation: spin 2s linear infinite;
+            /* Safari */
+            animation: spin 2s linear infinite;
+        }
+
+        /* Safari */
+        @-webkit-keyframes spin {
+            0% {
+                -webkit-transform: rotate(0deg);
+            }
+
+            100% {
+                -webkit-transform: rotate(360deg);
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <form id='sendForm' method="POST" action="/loadImg" enctype="multipart/form-data">
+        Ingresa el archivo:
+        <br />
+        <input id='fileCh' name='files' type='file' />
+        <input type="submit" value="Cargar Archivo" />
+        <br />
+    </form>
+    <br />
+    <div id="server">
+       
+        <button onclick="addServer()">Agregar Nuevo Servidor</button>
+    </div>
+    <br />
+    <br />
+    <div id="imgRes">
+    </div>
+</body>
+
+<script>
+    var middleware = "http://localhost:3000/"
+    var ipServer = "";
+    var result = null;
+    var data = null;
+    document.getElementById('sendForm').onsubmit = async (e) => {
+        e.preventDefault();
+        var responseA = await fetch(middleware, {
+            method: 'GET'
+        })
+        resultA = await responseA.text();
+        console.log(resultA);
+        ipServer = resultA;
+        if (ipServer != 'Error') {
+            var response = await fetch(ipServer + 'loadImg', {
+                method: 'POST',
+                body: new FormData(document.getElementById('sendForm'))
+            })
+            result = await response.text();
+            console.log(result);
+            if (result != null) {
+                data = {
+                    fileName: result
+                }
+                document.getElementById("imgRes").innerHTML = "<div class='loader'/>";
+                loadedElement();
+            };
+        } else {
+            alert("No hay servidores disponibles")
+        }
+    }
+
+    function loadedElement() {
+        setTimeout(function () { document.getElementById("imgRes").innerHTML = '<button onclick="loadImage()">Mostrar</>'; }, 5000)
+    }
+
+    function loadImage() {
+        $.post(ipServer + 'getImage', data)
+            .done(function (res) {
+                $('#imgRes').html(res);
+            })
+        document.getElementById('fileCh').value = null;
+    }
+
+    function addServer() {
+        $.post(middleware + 'addServer')
+            .done(function (res) {
+                alert(res)
+            })
+    }
+
+
+</script>
+
+</html>
