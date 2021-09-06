@@ -1,0 +1,3 @@
+::1 - - [06/Sep/2021:04:20:16 +0000] "POST /addServer HTTP/1.1" 500 1526 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36"
+::1 - - [06/Sep/2021:04:30:22 +0000] "POST /addServer HTTP/1.1" 500 1530 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36"
+::1 - - [06/Sep/2021:04:30:22 +0000] "POST /addServer HTTP/1.1" 500 1530 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36"
